@@ -1,4 +1,4 @@
-package org.example.springboot_funkos.rest.pedidos.models;
+package org.example.springboot_funkos.rest.venta.models;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;

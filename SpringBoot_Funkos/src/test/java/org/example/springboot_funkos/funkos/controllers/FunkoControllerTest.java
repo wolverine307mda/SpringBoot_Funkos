@@ -1,5 +1,6 @@
 package org.example.springboot_funkos.funkos.controllers;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.example.springboot_funkos.rest.categoria.model.Categoria;
@@ -11,7 +12,8 @@ import org.example.springboot_funkos.rest.funkos.services.FunkoServiceImpl;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
-import org.example.springboot_funkos.utils.PaginationLinksUtils;
+import org.example.springboot_funkos.utils.pagination.PageResponse;
+import org.example.springboot_funkos.utils.pagination.PaginationLinksUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,15 +22,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -80,26 +81,27 @@ class FunkoControllerTest {
     }
 
     @Test
-    void getAll() throws Exception {
-        var funkosList = List.of(funkoTest);
-        var pageable = PageRequest.of(0, 10, Sort.by("id").ascending());
-        var page = new PageImpl<>(funkosList);
+    void getAllFunkos() throws Exception {
+        Funko funko1 = new Funko(1L, "Mickey", 25.99, 10, null, null, null);
+        Funko funko2 = new Funko(1L, "Iron Man", 30.99, 5, null, null, null);
+
+        List<Funko> funkos = List.of(funko1, funko2);
+        Pageable pageable = PageRequest.of(0, 10, Sort.by("id").ascending());
+        Page<Funko> page = new PageImpl<>(funkos, pageable, funkos.size());
 
         when(service.getAll(pageable)).thenReturn(page);
 
-        MockHttpServletResponse response = mvc.perform(
-                get(myEndpoint)
+        var response = mvc.perform(get("/funkos")
+                        .param("page", "0")
+                        .param("size", "10")
                         .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
                 .andReturn().getResponse();
 
-        List<Funko> res = objectMapper.readValue(response.getContentAsString(),
-                objectMapper.getTypeFactory().constructCollectionType(List.class, Funko.class));
-
-        assertAll(
-                () -> assertEquals(response.getStatus(), HttpStatus.OK.value()),
-                () -> assertFalse(res.isEmpty()),
-                () -> assertTrue(res.stream().anyMatch(r -> r.getId().equals(funkoTest.getId())))
-        );
+        PageResponse<Funko> result = objectMapper.readValue(response.getContentAsString(), new TypeReference<>() {});
+        assertEquals(2, result.content().size());
+        assertEquals("Mickey", result.content().get(0).getNombre());
+        assertEquals("Iron Man", result.content().get(1).getNombre());
 
         verify(service, times(1)).getAll(pageable);
     }
@@ -172,73 +174,69 @@ class FunkoControllerTest {
     }
 
     @Test
-    void save() throws Exception {
-        Categoria nuevaCategoria = new Categoria();
-        nuevaCategoria.setId(UUID.fromString("5790bdd4-8898-4c61-b547-bc26952dc2a3"));
-        nuevaCategoria.setNombre("DISNEY");
-        nuevaCategoria.setActivado(true);
+    void saveFunko() throws Exception {
+        FunkoDto funkoDto = new FunkoDto();
+        funkoDto.setNombre("Mickey");
+        funkoDto.setPrecio(20.55);
+        funkoDto.setStock(15);
+        funkoDto.setCategoria("Superheroe");
 
-        FunkoDto nuevoFunko = new FunkoDto();
-        nuevoFunko.setNombre("Mickey Mouse");
-        nuevoFunko.setPrecio(7.95);
-        nuevoFunko.setCategoria("DISNEY");
+        Funko savedFunko = new Funko(1L, "Mickey", 25.99, 10, null, null, null);
 
-        when(service.save(nuevoFunko)).thenReturn(mapper.toFunko(nuevoFunko, nuevaCategoria));
+        when(service.save(funkoDto)).thenReturn(savedFunko);
 
-        MockHttpServletResponse response = mvc.perform(
-                        post(myEndpoint)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(nuevoFunko)))
+        var response = mvc.perform(post("/funkos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(funkoDto)))
+                .andExpect(status().isCreated())
                 .andReturn().getResponse();
 
-        Funko res = objectMapper.readValue(response.getContentAsString(), Funko.class);
+        Funko result = objectMapper.readValue(response.getContentAsString(), Funko.class);
+        assertEquals("Mickey", result.getNombre());
+        assertEquals(25.99, result.getPrecio());
+        assertEquals(10, result.getStock());
 
-        assertAll(
-                () -> assertEquals(response.getStatus(), HttpStatus.CREATED.value()),
-                () -> assertEquals(res.getId(), mapper.toFunko(nuevoFunko, nuevaCategoria).getId()),
-                () -> assertEquals(res.getNombre(), nuevoFunko.getNombre()),
-                () -> assertEquals(res.getPrecio(), nuevoFunko.getPrecio()),
-                () -> assertEquals(res.getCategoria(), mapper.toFunko(nuevoFunko, nuevaCategoria).getCategoria())
-        );
-
-        verify(service, times(1)).save(nuevoFunko);
+        verify(service, times(1)).save(funkoDto);
     }
 
     @Test
-    void update() throws Exception {
-        Categoria updatedCategoria = new Categoria();
-        updatedCategoria.setId(UUID.fromString("5790bdd4-8898-4c61-b547-bc26952dc2a3"));
-        updatedCategoria.setNombre("SUPERHEROE");
-        updatedCategoria.setActivado(true);
+    void updateFunko() throws Exception {
+        // Crear un UUID para la categoría
+        UUID categoriaId = UUID.randomUUID();
+        Categoria categoria = new Categoria(categoriaId, "Disney", LocalDateTime.now(), LocalDateTime.now(), true);
 
-        FunkoDto updateFunko = new FunkoDto();
-        updateFunko.setNombre("Goku");
-        updateFunko.setPrecio(15.99);
-        updateFunko.setCategoria(updatedCategoria.getNombre());
+        // Crear el DTO de Funko con la categoría
+        Long funkoId = 1L;
+        FunkoDto funkoDto = new FunkoDto();
+        funkoDto.setNombre("Mickey");
+        funkoDto.setPrecio(20.55);
+        funkoDto.setStock(15);
+        funkoDto.setCategoria("Disney"); // Asignar la categoría al DTO
 
-        Funko funko = new Funko();
-        funko.setNombre(updateFunko.getNombre());
-        funko.setPrecio(updateFunko.getPrecio());
-        funko.setCategoria(updatedCategoria);
+        // Crear el Funko actualizado con la categoría
+        Funko updatedFunko = new Funko(1L, "Mickey Updated", 28.99, 8, categoria, null, null);
 
-        when(service.update(String.valueOf(2L), updateFunko)).thenReturn(mapper.toFunkoUpdate(updateFunko, funko, updatedCategoria));
+        // Simular el comportamiento del servicio
+        when(service.update(funkoId.toString(), funkoDto)).thenReturn(updatedFunko);
 
-        MockHttpServletResponse response = mvc.perform(
-                put(myEndpoint + "/2")
-                       .contentType(MediaType.APPLICATION_JSON)
-                       .content(objectMapper.writeValueAsString(updateFunko)))
-               .andReturn().getResponse();
+        // Realizar la solicitud PUT
+        var response = mvc.perform(put("/funkos/" + funkoId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(funkoDto)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse();
 
-        Funko res = objectMapper.readValue(response.getContentAsString(), Funko.class);
+        // Convertir la respuesta en un objeto Funko
+        Funko result = objectMapper.readValue(response.getContentAsString(), Funko.class);
 
-        assertAll(
-                () -> assertEquals(response.getStatus(), HttpStatus.OK.value()),
-                () -> assertEquals(res.getNombre(), updateFunko.getNombre()),
-                () -> assertEquals(res.getPrecio(), updateFunko.getPrecio()),
-                () -> assertEquals(res.getCategoria().getNombre(), updateFunko.getCategoria())
-        );
+        // Verificar que los valores de la respuesta sean correctos
+        assertEquals("Mickey Updated", result.getNombre());
+        assertEquals(28.99, result.getPrecio());
+        assertEquals(8, result.getStock());
+        assertEquals(categoriaId, result.getCategoria().getId()); // Verificar que la categoría sea correcta
 
-        verify(service, times(1)).update(String.valueOf(2L), updateFunko);
+        // Verificar que el servicio se haya llamado correctamente
+        verify(service, times(1)).update(funkoId.toString(), funkoDto);
     }
 
     @Test

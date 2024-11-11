@@ -1,4 +1,4 @@
-package org.example.springboot_funkos.rest.pedidos.models;
+package org.example.springboot_funkos.rest.venta.models;
 
 import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class LineaPedido {
+public class LineaVenta {
     @Min(value = 1, message = "La cantidad del producto no puede ser negativa")
     @Builder.Default
     private Integer cantidad = 1;

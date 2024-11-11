@@ -38,6 +38,8 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo:4.18.0")
+    testImplementation ("org.mockito:mockito-core:5.0.0")
+    testImplementation ("org.springframework.security:spring-security-test")
 }
 
 tasks.withType<Test> {

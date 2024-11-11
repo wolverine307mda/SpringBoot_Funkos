@@ -1,4 +1,4 @@
-package org.example.springboot_funkos.rest.pedidos.models;
+package org.example.springboot_funkos.rest.venta.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Id;
@@ -20,7 +20,7 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 @Document("pedidos")
-public class Pedido {
+public class Venta {
     @Id
     @Builder.Default
     private ObjectId id = new ObjectId();
@@ -32,7 +32,7 @@ public class Pedido {
     private Cliente cliente;
 
     @NotNull(message = "Debe haber al menos 1 linea de pedido")
-    private List<LineaPedido> lineaPedido;
+    private List<LineaVenta> lineaVenta;
 
     @Builder.Default
     private Integer totalItems = 0;
@@ -54,9 +54,9 @@ public class Pedido {
     @JsonProperty("id")
     public String get_id() { return id.toHexString(); }
 
-    public void setLineasPedido (List<LineaPedido> lineaPedido){
-        this.lineaPedido = lineaPedido;
-        this.totalItems = lineaPedido !=null ? lineaPedido.size() : 0;
-        this.total = lineaPedido !=null ? lineaPedido.stream().mapToDouble(LineaPedido::getTotal).sum() : 0.0;
+    public void setLineasPedido (List<LineaVenta> lineaVenta){
+        this.lineaVenta = lineaVenta;
+        this.totalItems = lineaVenta !=null ? lineaVenta.size() : 0;
+        this.total = lineaVenta !=null ? lineaVenta.stream().mapToDouble(LineaVenta::getTotal).sum() : 0.0;
     }
 }

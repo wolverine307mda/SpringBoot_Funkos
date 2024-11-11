@@ -7,15 +7,23 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-public class FunkoDto{
+public class FunkoDto {
         @NotBlank(message = "El nombre no puede estar vacio")
         String nombre;
+
         @Min(value = 0)
         @Max(value = 50)
         @NotNull(message = "El precio no puede ser un campo nulo")
         Double precio;
+
         @NotNull(message = "El stock no puede ser un campo nulo")
-        Integer stock;
+        private Integer stock;
+
         @NotBlank(message = "La categoria no puede estar vacia")
         String categoria;
+
+        public void setStock(Integer stock) {
+                this.stock = (stock == null) ? 0 : stock;
+        }
+
 }

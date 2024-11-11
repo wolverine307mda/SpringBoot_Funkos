@@ -1,4 +1,4 @@
-package org.example.springboot_funkos.rest.pedidos.exceptions;
+package org.example.springboot_funkos.rest.venta.exceptions;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import java.util.UUID;
 
 @ResponseStatus(HttpStatus.BAD_REQUEST)
-public class FunkoNotFound extends PedidoException {
+public class FunkoNotFound extends VentaException {
     public FunkoNotFound(Long id) {
         super("Funko con id " + id + " no encontrado");
     }

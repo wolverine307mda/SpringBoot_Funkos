@@ -1,9 +1,10 @@
-package org.example.springboot_funkos.utils;
+package org.example.springboot_funkos.utils.pagination;
 
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
+// Es un compnente de paginación standard
 @Component
 public class PaginationLinksUtils {
 
@@ -33,12 +34,14 @@ public class PaginationLinksUtils {
             linkHeader.append(buildLinkHeader(uri, "last"));
         }
 
+
         return linkHeader.toString();
     }
 
     private String constructUri(int newPageNumber, int size, UriComponentsBuilder uriBuilder) {
         return uriBuilder.replaceQueryParam("page", newPageNumber).replaceQueryParam("size", size).build().encode().toUriString();
     }
+
 
     private String buildLinkHeader(final String uri, final String rel) {
         return "<" + uri + ">; rel=\"" + rel + "\"";
@@ -49,4 +52,5 @@ public class PaginationLinksUtils {
             linkHeader.append(", ");
         }
     }
+
 }

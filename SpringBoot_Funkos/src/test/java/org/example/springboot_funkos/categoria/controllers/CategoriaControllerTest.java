@@ -1,11 +1,13 @@
 package org.example.springboot_funkos.categoria.controllers;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.example.springboot_funkos.rest.categoria.dto.CategoriaDto;
 import org.example.springboot_funkos.rest.categoria.mappers.CategoriaMapper;
 import org.example.springboot_funkos.rest.categoria.model.Categoria;
 import org.example.springboot_funkos.rest.categoria.services.CategoriaServiceImpl;
+import org.example.springboot_funkos.utils.pagination.PageResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,18 +16,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -67,43 +67,47 @@ class CategoriaControllerTest {
     }
 
     @Test
-    void getAll() throws Exception {
-        // Create a test category
-        Categoria categoriaTest = new Categoria();
-        categoriaTest.setId(UUID.fromString("123e4567-e89b-12d3-a456-426614174000"));
-        categoriaTest.setNombre("DISNEY");
-        categoriaTest.setActivado(true);
+    void getAllCategorias() throws Exception {
+        // Configuración de objetos de prueba
+        Categoria categoria1 = new Categoria();
+        categoria1.setId(UUID.fromString("123e4567-e89b-12d3-a456-426614174000"));
+        categoria1.setNombre("DISNEY");
+        categoria1.setActivado(true);
 
-        // Set up Pageable and Page objects
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<Categoria> page = new PageImpl<>(List.of(categoriaTest), pageable, 1);
+        Categoria categoria2 = new Categoria();
+        categoria2.setId(UUID.fromString("123e4567-e89b-12d3-a456-426614174001"));
+        categoria2.setNombre("MARVEL");
+        categoria2.setActivado(true);
 
-        // Mock service call
+        // Simulación de datos paginados
+        List<Categoria> list = List.of(categoria1, categoria2);
+        Pageable pageable = PageRequest.of(0, 10, Sort.by("id").ascending());
+        Page<Categoria> page = new PageImpl<>(list, pageable, list.size());
+
+        // Configuración del mock para el servicio
         when(service.getAll(pageable)).thenReturn(page);
 
-        // Perform the request
+        // Realizar la petición al endpoint
         MockHttpServletResponse response = mvc.perform(
-                        get("/categorias")
+                        get(myEndpoint)
                                 .param("page", "0")
                                 .param("size", "10")
                                 .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
                 .andReturn().getResponse();
 
-        // Parse response
-        Page<Categoria> res = objectMapper.readValue(response.getContentAsString(),
-                objectMapper.getTypeFactory().constructParametricType(PageImpl.class, Categoria.class));
-
-        // Assertions
-        assertAll(
-                () -> assertEquals(HttpStatus.OK.value(), response.getStatus()),
-                () -> assertFalse(res.isEmpty()),
-                () -> assertTrue(res.getContent().stream().anyMatch(r -> r.getId().equals(categoriaTest.getId())))
+        // Leer y verificar la respuesta
+        PageResponse<CategoriaDto> res = objectMapper.readValue(response.getContentAsString(), new TypeReference<>() {});
+        assertAll("findAllCategorias",
+                () -> assertEquals(200, response.getStatus()),
+                () -> assertEquals(2, res.content().size()),
+                () -> assertEquals("DISNEY", res.content().get(0).getNombre()),
+                () -> assertEquals("MARVEL", res.content().get(1).getNombre())
         );
 
-        // Verify the service method was called
+        // Verificar interacción con el servicio
         verify(service, times(1)).getAll(pageable);
     }
-
 
     @Test
     void getById() throws Exception {

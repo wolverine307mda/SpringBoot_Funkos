@@ -5,8 +5,8 @@ import jakarta.validation.Valid;
 import org.example.springboot_funkos.rest.funkos.dto.FunkoDto;
 import org.example.springboot_funkos.rest.funkos.model.Funko;
 import org.example.springboot_funkos.rest.funkos.services.FunkoService;
-import org.example.springboot_funkos.utils.PageResponse;
-import org.example.springboot_funkos.utils.PaginationLinksUtils;
+import org.example.springboot_funkos.utils.pagination.PageResponse;
+import org.example.springboot_funkos.utils.pagination.PaginationLinksUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -77,8 +77,13 @@ public class FunkoController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Funko> update(@PathVariable Long id, @Valid @RequestBody FunkoDto funkoDto) {
-        var res = service.update(String.valueOf(id), funkoDto);
-        return ResponseEntity.ok(res);
+        if (funkoDto.getStock() == null) {
+            funkoDto.setStock(0);
+        }
+
+        Funko updatedFunko = service.update(String.valueOf(id), funkoDto);
+
+        return ResponseEntity.ok(updatedFunko);
     }
 
     @DeleteMapping("/{id}")

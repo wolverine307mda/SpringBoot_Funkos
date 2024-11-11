@@ -1,4 +1,4 @@
-package org.example.springboot_funkos.utils;
+package org.example.springboot_funkos.utils.pagination;
 
 import org.springframework.data.domain.Page;
 
@@ -17,6 +17,7 @@ public record PageResponse<T>(
         String sortBy,
         String direction
 ) {
+    // Podemos hacer un mapper en este caso
     public static <T> PageResponse<T> of(Page<T> page, String sortBy, String direction) {
         return new PageResponse<>(
                 page.getContent(),
