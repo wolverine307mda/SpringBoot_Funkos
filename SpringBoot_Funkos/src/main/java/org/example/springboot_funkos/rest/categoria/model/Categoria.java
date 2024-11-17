@@ -1,39 +1,32 @@
 package org.example.springboot_funkos.rest.categoria.model;
 
-import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-
-import java.time.LocalDateTime;
-import org.hibernate.annotations.SQLDelete;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Table(name = "categorias")
-@SQLDelete(sql = "UPDATE categorias SET activado=false WHERE id=?")
+@Document(collection = "categorias")
 public class Categoria {
-    @Id
-    @GeneratedValue
-    private UUID id;
 
-    @Column(name = "nombre", nullable = false, unique = true)
+    @Id
+    private UUID id = UUID.randomUUID();
+
     private String nombre;
 
-    @Column(name = "created_at")
     @CreatedDate
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column(name = "updated_at")
     @LastModifiedDate
     private LocalDateTime updatedAt = LocalDateTime.now();
 
-    @Column(name = "activado")
     private Boolean activado = true;
 }

@@ -101,7 +101,7 @@ class CategoriaServiceImplTest {
         );
 
         assertEquals(HttpStatus.NOT_FOUND, thrown.getStatusCode());
-        assertEquals("La categoria con id 4182d617-ec89-4fbc-be95-85e461778700 no se ha encontrado.", thrown.getReason());
+        assertEquals("La categoría con id 4182d617-ec89-4fbc-be95-85e461778700 no se ha encontrado.", thrown.getReason());
 
         verify(validator, times(1)).isIdValid("4182d617-ec89-4fbc-be95-85e461778700");
         verify(repository, times(1)).findById(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778700"));
@@ -145,7 +145,7 @@ class CategoriaServiceImplTest {
         );
 
         assertEquals(HttpStatus.NOT_FOUND, thrown.getStatusCode());
-        assertEquals("La categoria CategoriaTestNotFound no existe", thrown.getReason());
+        assertEquals("La categoría CategoriaTestNotFound no existe.", thrown.getReason());
 
         verify(repository, times(1)).findByNombre("CategoriaTestNotFound");
     }
@@ -193,7 +193,7 @@ class CategoriaServiceImplTest {
         );
 
         assertEquals(HttpStatus.BAD_REQUEST, thrown.getStatusCode());
-        assertEquals("El nombre de la categoria no es válido.", thrown.getReason());
+        assertEquals("El nombre de la categoría no es válido.", thrown.getReason());
 
         verify(validator, times(1)).isNameUnique(nuevaCategoriaDto.getNombre());
     }
@@ -275,7 +275,7 @@ class CategoriaServiceImplTest {
         );
 
         assertEquals(HttpStatus.NOT_FOUND, thrown.getStatusCode());
-        assertEquals("La categoria con id 4182d617-ec89-4fbc-be95-85e461778700 no se ha encontrado.", thrown.getReason());
+        assertEquals("La categoría con id 4182d617-ec89-4fbc-be95-85e461778700 no se ha encontrado.", thrown.getReason());
 
         verify(validator, times(1)).isIdValid("4182d617-ec89-4fbc-be95-85e461778700");
         verify(repository, times(1)).findById(id);
@@ -306,7 +306,7 @@ class CategoriaServiceImplTest {
         );
 
         assertEquals(HttpStatus.BAD_REQUEST, thrown.getStatusCode());
-        assertEquals("El nombre de la categoria ya existe", thrown.getReason());
+        assertEquals("El nombre de la categoría ya existe.", thrown.getReason());
 
         verify(validator, times(1)).isIdValid("4182d617-ec89-4fbc-be95-85e461778766");
         verify(repository, times(1)).findById(id);
@@ -394,7 +394,7 @@ class CategoriaServiceImplTest {
         );
 
         assertEquals(HttpStatus.NOT_FOUND, thrown.getStatusCode());
-        assertEquals("La categoria con id 4182d617-ec89-4fbc-be95-85e461778766 no se ha encontrado.", thrown.getReason());
+        assertEquals("La categoría con id 4182d617-ec89-4fbc-be95-85e461778766 no se ha encontrado.", thrown.getReason());
 
         verify(validator, times(1)).isIdValid("4182d617-ec89-4fbc-be95-85e461778766");
         verify(repository, times(1)).findByIdAndActivadoTrue(id);

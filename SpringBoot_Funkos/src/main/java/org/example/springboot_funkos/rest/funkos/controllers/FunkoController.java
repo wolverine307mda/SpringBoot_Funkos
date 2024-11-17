@@ -26,9 +26,9 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/funkos")
 public class FunkoController {
+
     private final FunkoService service;
     private final PaginationLinksUtils paginationLinksUtils;
-
 
     @Autowired
     public FunkoController(PaginationLinksUtils paginationLinksUtils, FunkoService funkoService) {
@@ -51,12 +51,11 @@ public class FunkoController {
         return ResponseEntity.ok()
                 .header("link", paginationLinksUtils.createLinkHeader(pageResult, uriBuilder))
                 .body(PageResponse.of(pageResult, sortBy, direction));
-
     }
 
     @GetMapping("/id/{id}")
-    public ResponseEntity<Funko> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(service.getById(String.valueOf(id)));
+    public ResponseEntity<Funko> getById(@PathVariable String id) {  // Cambié Long por String para MongoDB
+        return ResponseEntity.ok(service.getById(id));
     }
 
     @GetMapping("/nombre/{nombre}")
@@ -76,26 +75,25 @@ public class FunkoController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Funko> update(@PathVariable Long id, @Valid @RequestBody FunkoDto funkoDto) {
+    public ResponseEntity<Funko> update(@PathVariable String id, @Valid @RequestBody FunkoDto funkoDto) {  // Cambié Long por String para MongoDB
         if (funkoDto.getStock() == null) {
             funkoDto.setStock(0);
         }
 
-        Funko updatedFunko = service.update(String.valueOf(id), funkoDto);
+        Funko updatedFunko = service.update(id, funkoDto);
 
         return ResponseEntity.ok(updatedFunko);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Funko> delete(@PathVariable Long id) {
-        var res = service.delete(String.valueOf(id));
+    public ResponseEntity<Funko> delete(@PathVariable String id) {  // Cambié Long por String para MongoDB
+        var res = service.delete(id);
         return ResponseEntity.ok(res);
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public Map<String, String> handleValidationExceptions(
-            MethodArgumentNotValidException ex) {
+    public Map<String, String> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach((error) -> {
             String fieldName = ((FieldError) error).getField();

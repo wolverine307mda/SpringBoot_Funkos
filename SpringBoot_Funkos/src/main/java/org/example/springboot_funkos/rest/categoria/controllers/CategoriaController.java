@@ -24,7 +24,8 @@ import java.util.*;
 @RestController
 @RequestMapping("/categorias")
 public class CategoriaController {
-    private CategoriaServiceImpl service;
+
+    private final CategoriaServiceImpl service;
     private final PaginationLinksUtils paginationLinksUtils;
 
     @Autowired
@@ -33,7 +34,7 @@ public class CategoriaController {
         this.paginationLinksUtils = paginationLinksUtils;
     }
 
-    @GetMapping()
+    @GetMapping
     public ResponseEntity<PageResponse<Categoria>> getAll(
             @RequestParam(required = false) Optional<String> nombre,
             @RequestParam(required = false) Optional<Boolean> activado,
@@ -43,14 +44,16 @@ public class CategoriaController {
             @RequestParam(defaultValue = "asc") String direction,
             HttpServletRequest request
     ) {
-        Sort sort = direction.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Sort sort = direction.equalsIgnoreCase(Sort.Direction.ASC.name())
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
         UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(request.getRequestURL().toString());
         Page<Categoria> pageResult = service.getAll(pageable);
+
         return ResponseEntity.ok()
                 .header("link", paginationLinksUtils.createLinkHeader(pageResult, uriBuilder))
                 .body(PageResponse.of(pageResult, sortBy, direction));
-
     }
 
     @GetMapping("/{id}")
@@ -60,26 +63,25 @@ public class CategoriaController {
 
     @PostMapping
     public ResponseEntity<Categoria> save(@Valid @RequestBody CategoriaDto categoriaDto) {
-        var res = service.save(categoriaDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(res);
+        var categoria = service.save(categoriaDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(categoria);
     }
 
     @PatchMapping("/{id}")
     public ResponseEntity<Categoria> update(@PathVariable String id, @RequestBody CategoriaDto categoriaDto) {
-        var res = service.update(id, categoriaDto);
-        return ResponseEntity.ok(res);
+        var categoriaActualizada = service.update(id, categoriaDto);
+        return ResponseEntity.ok(categoriaActualizada);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Categoria> delete(@PathVariable String id, @RequestBody CategoriaDto categoriaDto) {
-        var res = service.delete(id, categoriaDto);
-        return ResponseEntity.ok(res);
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable String id) {
+        service.delete(id, new CategoriaDto()); // Envía un DTO vacío si no se requiere más información.
+        return ResponseEntity.noContent().build();
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public Map<String, String> handleValidationExceptions(
-            MethodArgumentNotValidException ex) {
+    public Map<String, String> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach((error) -> {
             String fieldName = ((FieldError) error).getField();

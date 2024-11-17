@@ -1,6 +1,5 @@
 package org.example.springboot_funkos.rest.funkos.model;
 
-import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -11,10 +10,13 @@ import lombok.Builder;
 import org.example.springboot_funkos.rest.categoria.model.Categoria;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.DBRef;
+import org.springframework.data.annotation.Id;
 
 import java.time.LocalDateTime;
 
-@Entity
+@Document(collection = "funkos")  // MongoDB collections are used instead of JPA tables
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -22,32 +24,25 @@ import java.time.LocalDateTime;
 public class Funko {
     private static final Long DEFAULT_ID = 0L;
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id=DEFAULT_ID;
+    @Id  // MongoDB uses @Id instead of @GeneratedValue for unique identifiers
+    private String id;  // MongoDB uses String as the default ID type
 
-    @Column(name = "nombre", nullable = false)
     @NotBlank(message = "El nombre no puede estar vacio")
     private String nombre;
 
-    @Column(name = "precio", nullable = false)
     @Min(value = 0)
     @Max(value = 50)
     private Double precio;
 
     @Min(value = 0, message = "El stock no puede ser negativo")
-    @Column(columnDefinition = "integer default 0")
     private Integer stock = 0;
 
-    @ManyToOne
-    @JoinColumn(name = "categoria")
+    @DBRef  // MongoDB uses DBRef to reference other documents like `Categoria`
     private Categoria categoria;
 
-    @Column(name = "created_at")
     @CreatedDate
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column(name = "updated_at")
     @LastModifiedDate
     private LocalDateTime updatedAt = LocalDateTime.now();
 }

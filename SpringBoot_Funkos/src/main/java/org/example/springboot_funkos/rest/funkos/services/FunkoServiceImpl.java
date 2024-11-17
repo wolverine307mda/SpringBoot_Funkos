@@ -32,14 +32,15 @@ import java.util.Optional;
 @Service
 @CacheConfig(cacheNames = {"funkos"})
 public class FunkoServiceImpl implements FunkoService {
+
     private final FunkoRepository repository;
     private final FunkoMapper mapper;
     private final CategoriaService categoriaService;
     private final WebSocketConfig webSocketConfig;
     private WebSocketHandler webSocketHandler;
     private final NotificacionMapper notificacionMapper;
-    private ObjectMapper objectMapper;
-    private FunkoValidator validator;
+    private final ObjectMapper objectMapper;
+    private final FunkoValidator validator;
 
     @Autowired
     public FunkoServiceImpl(FunkoRepository repository, FunkoMapper mapper, CategoriaService categoriaService, WebSocketConfig webSocketConfig, NotificacionMapper notificacionMapper, FunkoValidator validator) {
@@ -47,8 +48,8 @@ public class FunkoServiceImpl implements FunkoService {
         this.mapper = mapper;
         this.categoriaService = categoriaService;
         this.webSocketConfig = webSocketConfig;
-        webSocketHandler = webSocketConfig.webSocketFunkosHandler();
-        objectMapper = new ObjectMapper();
+        this.webSocketHandler = webSocketConfig.webSocketFunkosHandler();
+        this.objectMapper = new ObjectMapper();
         this.notificacionMapper = notificacionMapper;
         this.validator = validator;
     }
@@ -61,11 +62,11 @@ public class FunkoServiceImpl implements FunkoService {
     @Cacheable
     @Override
     public Funko getById(String id) {
-        if (!validator.isIdValid(String.valueOf(id))) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El id no es valido. Debe ser de tipo Long");
+        if (!validator.isIdValid(id)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El id no es válido. Debe ser de tipo Long");
         }
-        return repository.findById(Long.valueOf(id)).orElseThrow(
-            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "El Funko con id " + id + " no se ha encontrado.")
+        return repository.findById(id).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "El Funko con id " + id + " no se ha encontrado.")
         );
     }
 
@@ -80,23 +81,18 @@ public class FunkoServiceImpl implements FunkoService {
     public Optional<Funko> getByStock(Integer stock) {
         if (stock < 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El stock no puede ser negativo.");
-        } else {
-            return Optional.ofNullable(repository.findByStock(stock)
-                    .orElseThrow(() -> new ResponseStatusException(
-                            HttpStatus.NOT_FOUND,
-                            "El funko con stock " + stock + " no existe"
-                    )));
         }
+        return repository.findByStock(stock);
     }
 
     @CachePut
     @Override
     public Funko save(FunkoDto funkoDto) {
-        var categoria = categoriaService.getByNombre(funkoDto.getCategoria().toUpperCase());
+        var categoria = categoriaService.getByNombre(funkoDto.getCategoria().toUpperCase());  // Se obtiene la categoría por nombre
         if (!validator.isNameUnique(funkoDto.getNombre())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El nombre del funko ya existe");
         }
-        var funkoSaved = repository.save(mapper.toFunko(funkoDto, categoria));
+        var funkoSaved = repository.save(mapper.toFunko(funkoDto, categoria));  // Guarda el Funko con la categoría asociada
         onChange(Notificacion.Tipo.CREATE, funkoSaved);
         return funkoSaved;
     }
@@ -104,21 +100,21 @@ public class FunkoServiceImpl implements FunkoService {
     @CachePut
     @Override
     public Funko update(String id, FunkoDto funkoDto) {
-        if (!validator.isIdValid(String.valueOf(id))) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El id no es valido. Debe ser de tipo Long");
+        if (!validator.isIdValid(id)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El id no es válido. Debe ser de tipo Long");
         }
 
-        var res = repository.findById(Long.valueOf(id)).orElseThrow(
-            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "El Funko con id " + id + " no se ha encontrado.")
+        var res = repository.findById(id).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "El Funko con id " + id + " no se ha encontrado.")
         );
         if (!validator.isNameUnique(funkoDto.getNombre())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El nombre del funko ya existe");
         }
-        var categoria = categoriaService.getByNombre(funkoDto.getCategoria());
+        var categoria = categoriaService.getByNombre(funkoDto.getCategoria());  // Se obtiene la categoría por nombre
         res.setNombre(funkoDto.getNombre());
         res.setPrecio(funkoDto.getPrecio());
         res.setCategoria(categoria);
-        var funkoUpdated = repository.save(res);
+        var funkoUpdated = repository.save(res);  // Actualiza el Funko
         onChange(Notificacion.Tipo.UPDATE, funkoUpdated);
         return funkoUpdated;
     }
@@ -126,14 +122,14 @@ public class FunkoServiceImpl implements FunkoService {
     @CacheEvict
     @Override
     public Funko delete(String id) {
-        if (!validator.isIdValid(String.valueOf(id))) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El id no es valido. Debe ser de tipo Long");
+        if (!validator.isIdValid(id)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El id no es válido. Debe ser de tipo Long");
         }
 
-        Funko funko = repository.findById(Long.valueOf(id)).orElseThrow(
-            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "El Funko con id " + id + " no se ha encontrado.")
+        Funko funko = repository.findById(id).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "El Funko con id " + id + " no se ha encontrado.")
         );
-        repository.deleteById(Long.valueOf(id));
+        repository.deleteById(id);  // Elimina el Funko
         onChange(Notificacion.Tipo.DELETE, funko);
         return funko;
     }

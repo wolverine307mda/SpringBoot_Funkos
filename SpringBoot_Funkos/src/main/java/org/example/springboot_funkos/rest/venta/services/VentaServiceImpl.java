@@ -93,7 +93,7 @@ public class VentaServiceImpl implements VentaService {
             throw new VentaNotItems(venta.get_id());
         }
         venta.getLineaVenta().forEach(lineaVenta -> {
-            var funko = funkoRepository.findById(lineaVenta.getIdFunko())
+            var funko = funkoRepository.findById(String.valueOf(lineaVenta.getIdFunko()))
                     .orElseThrow(() -> new FunkoNotFound(lineaVenta.getIdFunko()));
             if (funko.getStock() < lineaVenta.getCantidad() && lineaVenta.getCantidad() > 0) {
                 throw new FunkoNotStock(lineaVenta.getIdFunko());
@@ -110,7 +110,7 @@ public class VentaServiceImpl implements VentaService {
             throw new VentaNotItems(venta.get_id());
         }
         venta.getLineaVenta().forEach(lineaVenta -> {
-            var funko = funkoRepository.findById(lineaVenta.getIdFunko()).get();
+            var funko = funkoRepository.findById(String.valueOf(lineaVenta.getIdFunko())).get();
             funko.setStock(funko.getStock() - lineaVenta.getCantidad());
             funkoRepository.save(funko);
             lineaVenta.setTotal(lineaVenta.getCantidad() * lineaVenta.getPrecioUnitario());

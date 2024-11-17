@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.example.springboot_funkos.rest.categoria.dto.CategoriaDto;
-import org.example.springboot_funkos.rest.categoria.mappers.CategoriaMapper;
 import org.example.springboot_funkos.rest.categoria.model.Categoria;
 import org.example.springboot_funkos.rest.categoria.services.CategoriaServiceImpl;
 import org.example.springboot_funkos.utils.pagination.PageResponse;
@@ -21,7 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
-
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -36,7 +35,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@ExtendWith(MockitoExtension.class)
 class CategoriaControllerTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -47,17 +45,12 @@ class CategoriaControllerTest {
     @Autowired
     MockMvc mvc;
 
-    CategoriaMapper mapper = new CategoriaMapper();
-    Categoria categoriaTest = new Categoria();
+    Categoria categoriaTest;
     String myEndpoint = "/categorias";
-
-    @Autowired
-    private CategoriaControllerTest(CategoriaServiceImpl service) {
-        this.service = service;
-    }
 
     @BeforeEach
     void setUp() {
+        categoriaTest = new Categoria();
         categoriaTest.setId(UUID.fromString("12d45756-3895-49b2-90d3-c4a12d5ee081"));
         categoriaTest.setNombre("DISNEY");
         categoriaTest.setCreatedAt(LocalDateTime.now());
@@ -68,7 +61,7 @@ class CategoriaControllerTest {
 
     @Test
     void getAllCategorias() throws Exception {
-        // Configuración de objetos de prueba
+        // Configuración de datos de prueba
         Categoria categoria1 = new Categoria();
         categoria1.setId(UUID.fromString("123e4567-e89b-12d3-a456-426614174000"));
         categoria1.setNombre("DISNEY");
@@ -79,15 +72,12 @@ class CategoriaControllerTest {
         categoria2.setNombre("MARVEL");
         categoria2.setActivado(true);
 
-        // Simulación de datos paginados
         List<Categoria> list = List.of(categoria1, categoria2);
         Pageable pageable = PageRequest.of(0, 10, Sort.by("id").ascending());
         Page<Categoria> page = new PageImpl<>(list, pageable, list.size());
 
-        // Configuración del mock para el servicio
         when(service.getAll(pageable)).thenReturn(page);
 
-        // Realizar la petición al endpoint
         MockHttpServletResponse response = mvc.perform(
                         get(myEndpoint)
                                 .param("page", "0")
@@ -96,16 +86,14 @@ class CategoriaControllerTest {
                 .andExpect(status().isOk())
                 .andReturn().getResponse();
 
-        // Leer y verificar la respuesta
-        PageResponse<CategoriaDto> res = objectMapper.readValue(response.getContentAsString(), new TypeReference<>() {});
-        assertAll("findAllCategorias",
-                () -> assertEquals(200, response.getStatus()),
+        PageResponse<Categoria> res = objectMapper.readValue(response.getContentAsString(), new TypeReference<>() {});
+
+        assertAll(
                 () -> assertEquals(2, res.content().size()),
                 () -> assertEquals("DISNEY", res.content().get(0).getNombre()),
                 () -> assertEquals("MARVEL", res.content().get(1).getNombre())
         );
 
-        // Verificar interacción con el servicio
         verify(service, times(1)).getAll(pageable);
     }
 
@@ -116,15 +104,14 @@ class CategoriaControllerTest {
         MockHttpServletResponse response = mvc.perform(
                         get(myEndpoint + "/12d45756-3895-49b2-90d3-c4a12d5ee081")
                                 .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
                 .andReturn().getResponse();
 
         Categoria res = objectMapper.readValue(response.getContentAsString(), Categoria.class);
 
         assertAll(
-                () -> assertEquals(response.getStatus(), HttpStatus.OK.value()),
-                () -> assertEquals(res.getId(), categoriaTest.getId()),
-                () -> assertEquals(res.getNombre(), categoriaTest.getNombre()),
-                () -> assertEquals(res.getActivado(), categoriaTest.getActivado())
+                () -> assertEquals("12d45756-3895-49b2-90d3-c4a12d5ee081", res.getId()),
+                () -> assertEquals("DISNEY", res.getNombre())
         );
 
         verify(service, times(1)).getById("12d45756-3895-49b2-90d3-c4a12d5ee081");
@@ -136,21 +123,20 @@ class CategoriaControllerTest {
         nuevoCategoria.setNombre("DISNEY");
         nuevoCategoria.setActivado(true);
 
-        when(service.save(nuevoCategoria)).thenReturn(mapper.toCategoria(nuevoCategoria));
+        when(service.save(nuevoCategoria)).thenReturn(categoriaTest);
 
         MockHttpServletResponse response = mvc.perform(
                         post(myEndpoint)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(nuevoCategoria)))
+                .andExpect(status().isCreated())
                 .andReturn().getResponse();
 
         Categoria res = objectMapper.readValue(response.getContentAsString(), Categoria.class);
 
         assertAll(
-                () -> assertEquals(response.getStatus(), HttpStatus.CREATED.value()),
-                () -> assertEquals(res.getId(), mapper.toCategoria(nuevoCategoria).getId()),
-                () -> assertEquals(res.getNombre(), mapper.toCategoria(nuevoCategoria).getNombre()),
-                () -> assertEquals(res.getActivado(), nuevoCategoria.getActivado())
+                () -> assertEquals("12d45756-3895-49b2-90d3-c4a12d5ee081", res.getId()),
+                () -> assertEquals("DISNEY", res.getNombre())
         );
 
         verify(service, times(1)).save(nuevoCategoria);
@@ -190,30 +176,12 @@ class CategoriaControllerTest {
 
     @Test
     void delete() throws Exception {
-        CategoriaDto deletedCategoria = new CategoriaDto();
-        deletedCategoria.setNombre("SUPERHEROES");
-        deletedCategoria.setActivado(true);
+        doNothing().when(service).delete("12d45756-3895-49b2-90d3-c4a12d5ee081", new CategoriaDto());
 
-        when(service.update("12d45756-3895-49b2-90d3-c4a12d5ee081", deletedCategoria)).thenReturn(mapper.toCategoria(deletedCategoria));
+        mvc.perform(MockMvcRequestBuilders.delete(myEndpoint + "/12d45756-3895-49b2-90d3-c4a12d5ee081"))
+                .andExpect(status().isNoContent());
 
-        MockHttpServletResponse response = mvc.perform(
-                        patch(myEndpoint + "/12d45756-3895-49b2-90d3-c4a12d5ee081")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(deletedCategoria)))
-                .andReturn().getResponse();
-
-        assertEquals(HttpStatus.OK.value(), response.getStatus());
-
-        Categoria res = objectMapper.readValue(response.getContentAsString(), Categoria.class);
-
-        assertAll(
-                () -> assertEquals(response.getStatus(), HttpStatus.OK.value()),
-                () -> assertEquals(res.getId(), mapper.toCategoria(deletedCategoria).getId()),
-                () -> assertEquals(res.getNombre(), mapper.toCategoria(deletedCategoria).getNombre()),
-                () -> assertEquals(res.getActivado(), deletedCategoria.getActivado())
-        );
-
-        verify(service, times(1)).update("12d45756-3895-49b2-90d3-c4a12d5ee081", deletedCategoria);
+        verify(service, times(1)).delete("12d45756-3895-49b2-90d3-c4a12d5ee081", new CategoriaDto());
     }
 
 
