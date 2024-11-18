@@ -74,8 +74,8 @@ public class CategoriaController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable String id) {
-        service.delete(id, new CategoriaDto()); // Envía un DTO vacío si no se requiere más información.
+    public ResponseEntity<Void> delete(@PathVariable String id, @RequestBody @Valid CategoriaDto categoriaDto) {
+        service.delete(id, categoriaDto);
         return ResponseEntity.noContent().build();
     }
 

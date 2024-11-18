@@ -100,7 +100,7 @@ class FunkoServiceImplTest {
     @Test
     void getById() {
         when(validator.isIdValid("1")).thenReturn(true);
-        when(repository.findById(1L)).thenReturn(Optional.of(funkoTest));
+        when(repository.findById("1")).thenReturn(Optional.of(funkoTest));
 
         var result = service.getById("1");
 
@@ -112,7 +112,7 @@ class FunkoServiceImplTest {
         );
 
         verify(validator, times(1)).isIdValid("1");
-        verify(repository, times(1)).findById(1L);
+        verify(repository, times(1)).findById("1");
     }
 
     @Test
@@ -124,7 +124,7 @@ class FunkoServiceImplTest {
         );
 
         assertEquals(HttpStatus.BAD_REQUEST, thrown.getStatusCode());
-        assertEquals("El id no es valido. Debe ser de tipo Long", thrown.getReason());
+        assertEquals("El id no es válido. Debe ser de tipo Long", thrown.getReason());
 
         verify(validator, times(1)).isIdValid("1a");
     }
@@ -132,7 +132,7 @@ class FunkoServiceImplTest {
     @Test
     void getByIdNotFound() {
         when(validator.isIdValid("1")).thenReturn(true);
-        when(repository.findById(1L)).thenReturn(Optional.empty());
+        when(repository.findById("1")).thenReturn(Optional.empty());
 
         ResponseStatusException thrown = assertThrows(
                 ResponseStatusException.class, () -> service.getById("1")
@@ -142,13 +142,13 @@ class FunkoServiceImplTest {
         assertEquals("El Funko con id 1 no se ha encontrado.", thrown.getReason());
 
         verify(validator, times(1)).isIdValid("1");
-        verify(repository, times(1)).findById(1L);
+        verify(repository, times(1)).findById("1");
     }
 
     @Test
     void getByNombreFunkoExists() {
         Funko funkoExistente = new Funko();
-        funkoExistente.setId(1L);
+        funkoExistente.setId("1");
         funkoExistente.setNombre("FunkoTest");
         funkoExistente.setPrecio(10.00);
 
@@ -180,7 +180,7 @@ class FunkoServiceImplTest {
     @Test
     void getByStock() {
         Funko funkoExistente = new Funko();
-        funkoExistente.setId(1L);
+        funkoExistente.setId("1");
         funkoExistente.setNombre("FunkoTest");
         funkoExistente.setPrecio(10.00);
         funkoExistente.setStock(20);
@@ -199,17 +199,32 @@ class FunkoServiceImplTest {
 
     @Test
     void getByStockNotFound() {
+        // Simulamos que no hay un Funko con el stock solicitado (3000)
         when(repository.findByStock(3000)).thenReturn(Optional.empty());
 
-        ResponseStatusException thrown = assertThrows(
-                ResponseStatusException.class, () -> service.getByStock(3000)
-        );
+        // Verificamos que no se lanza excepción, sino que simplemente retorna Optional.empty()
+        Optional<Funko> result = service.getByStock(3000);
 
-        assertEquals(HttpStatus.NOT_FOUND, thrown.getStatusCode());
-        assertEquals("El funko con stock 3000 no existe", thrown.getReason());
+        // Comprobamos que el resultado es vacío
+        assertTrue(result.isEmpty());
 
+        // Verificamos que el repositorio fue llamado
         verify(repository, times(1)).findByStock(3000);
     }
+
+    @Test
+    void getByStockNegative() {
+        // Simulamos el caso de stock negativo
+        ResponseStatusException thrown = assertThrows(
+                ResponseStatusException.class,
+                () -> service.getByStock(-1)
+        );
+
+        // Validamos que se lanza la excepción con el código de estado BAD_REQUEST
+        assertEquals(HttpStatus.BAD_REQUEST, thrown.getStatusCode());
+        assertEquals("El stock no puede ser negativo.", thrown.getReason());
+    }
+
 
     @Test
     void save() throws IOException {
@@ -312,13 +327,13 @@ class FunkoServiceImplTest {
         updatedFunkoDto.setCategoria(updatedCategoria.getNombre());
 
         Funko updatedFunko = new Funko();
-        updatedFunko.setId(2L);
+        updatedFunko.setId("1");
         updatedFunko.setNombre("FunkoTest");
         updatedFunko.setPrecio(10.00);
         updatedFunko.setCategoria(updatedCategoria);
 
         when(validator.isIdValid("2")).thenReturn(true);
-        when(repository.findById(2L)).thenReturn(Optional.of(updatedFunko));
+        when(repository.findById("2")).thenReturn(Optional.of(updatedFunko));
         when(validator.isNameUnique(updatedFunkoDto.getNombre())).thenReturn(true);
         when(categoriaService.getByNombre(updatedFunkoDto.getCategoria())).thenReturn(updatedCategoria);
         when(repository.save(updatedFunko)).thenReturn(updatedFunko);
@@ -335,7 +350,7 @@ class FunkoServiceImplTest {
         );
 
         verify(validator, times(1)).isIdValid("2");
-        verify(repository, times(1)).findById(2L);
+        verify(repository, times(1)).findById("2");
         verify(validator, times(1)).isNameUnique(updatedFunkoDto.getNombre());
         verify(repository, times(1)).save(updatedFunko);
         verify(categoriaService, times(1)).getByNombre(updatedCategoria.getNombre());
@@ -360,7 +375,7 @@ class FunkoServiceImplTest {
         );
 
         assertEquals(HttpStatus.BAD_REQUEST, thrown.getStatusCode());
-        assertEquals("El id no es valido. Debe ser de tipo Long", thrown.getReason());
+        assertEquals("El id no es válido. Debe ser de tipo Long", thrown.getReason());
 
         verify(validator, times(1)).isIdValid("2a");
     }
@@ -378,13 +393,13 @@ class FunkoServiceImplTest {
         updatedFunkoDto.setCategoria(updatedCategoria.getNombre());
 
         Funko updatedFunko = new Funko();
-        updatedFunko.setId(2L);
+        updatedFunko.setId("2");
         updatedFunko.setNombre("FunkoTest");
         updatedFunko.setPrecio(10.00);
         updatedFunko.setCategoria(updatedCategoria);
 
         when(validator.isIdValid("2")).thenReturn(true);
-        when(repository.findById(2L)).thenReturn(Optional.empty());
+        when(repository.findById("2")).thenReturn(Optional.empty());
 
         ResponseStatusException thrown = assertThrows(
                 ResponseStatusException.class, () -> service.update("2", updatedFunkoDto)
@@ -394,7 +409,7 @@ class FunkoServiceImplTest {
         assertEquals("El Funko con id 2 no se ha encontrado.", thrown.getReason());
 
         verify(validator, times(1)).isIdValid("2");
-        verify(repository, times(1)).findById(2L);
+        verify(repository, times(1)).findById("2");
     }
 
     @Test
@@ -410,13 +425,13 @@ class FunkoServiceImplTest {
         updatedFunkoDto.setCategoria(updatedCategoria.getNombre());
 
         Funko updatedFunko = new Funko();
-        updatedFunko.setId(2L);
+        updatedFunko.setId("2");
         updatedFunko.setNombre("FunkoTest");
         updatedFunko.setPrecio(10.00);
         updatedFunko.setCategoria(updatedCategoria);
 
         when(validator.isIdValid("2")).thenReturn(true);
-        when(repository.findById(2L)).thenReturn(Optional.of(updatedFunko));
+        when(repository.findById("2")).thenReturn(Optional.of(updatedFunko));
         when(validator.isNameUnique(updatedFunkoDto.getNombre())).thenReturn(false);
 
         ResponseStatusException thrown = assertThrows(
@@ -427,7 +442,7 @@ class FunkoServiceImplTest {
         assertEquals("El nombre del funko ya existe", thrown.getReason());
 
         verify(validator, times(1)).isIdValid("2");
-        verify(repository, times(1)).findById(2L);
+        verify(repository, times(1)).findById("2");
         verify(validator, times(1)).isNameUnique(updatedFunkoDto.getNombre());
 
     }
@@ -445,13 +460,13 @@ class FunkoServiceImplTest {
         updatedFunkoDto.setCategoria(updatedCategoria.getNombre());
 
         Funko updatedFunko = new Funko();
-        updatedFunko.setId(2L);
+        updatedFunko.setId("2");
         updatedFunko.setNombre("FunkoTest");
         updatedFunko.setPrecio(10.00);
         updatedFunko.setCategoria(updatedCategoria);
 
         when(validator.isIdValid("2")).thenReturn(true);
-        when(repository.findById(2L)).thenReturn(Optional.of(updatedFunko));
+        when(repository.findById("2")).thenReturn(Optional.of(updatedFunko));
         when(validator.isNameUnique(updatedFunkoDto.getNombre())).thenReturn(true);
         when(categoriaService.getByNombre(updatedCategoria.getNombre())).thenThrow(
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "La categoria CategoriaTest no existe")
@@ -465,7 +480,7 @@ class FunkoServiceImplTest {
         assertEquals("La categoria CategoriaTest no existe", thrown.getReason());
 
         verify(validator, times(1)).isIdValid("2");
-        verify(repository, times(1)).findById(2L);
+        verify(repository, times(1)).findById("2");
         verify(validator, times(1)).isNameUnique(updatedFunkoDto.getNombre());
         verify(categoriaService, times(1)).getByNombre(updatedCategoria.getNombre());
     }
@@ -473,7 +488,7 @@ class FunkoServiceImplTest {
     @Test
     void delete() throws IOException {
         when(validator.isIdValid("1")).thenReturn(true);
-        when(repository.findById(1L)).thenReturn(Optional.of(funkoTest));
+        when(repository.findById("1")).thenReturn(Optional.of(funkoTest));
         doNothing().when(webSocketHandler).sendMessage(any());
 
         var result = service.delete("1");
@@ -485,8 +500,8 @@ class FunkoServiceImplTest {
         );
 
         verify(validator, times(1)).isIdValid("1");
-        verify(repository, times(1)).findById(1L);
-        verify(repository, times(1)).deleteById(1L);
+        verify(repository, times(1)).findById("1");
+        verify(repository, times(1)).deleteById("1");
     }
 
     @Test
@@ -498,7 +513,7 @@ class FunkoServiceImplTest {
         );
 
         assertEquals(HttpStatus.BAD_REQUEST, thrown.getStatusCode());
-        assertEquals("El id no es valido. Debe ser de tipo Long", thrown.getReason());
+        assertEquals("El id no es válido. Debe ser de tipo Long", thrown.getReason());
 
         verify(validator, times(1)).isIdValid("1a");
     }
@@ -506,7 +521,7 @@ class FunkoServiceImplTest {
     @Test
     void deleteNotFound() {
         when(validator.isIdValid("1")).thenReturn(true);
-        when(repository.findById(1L)).thenReturn(Optional.empty());
+        when(repository.findById("1")).thenReturn(Optional.empty());
 
         ResponseStatusException thrown = assertThrows(
                 ResponseStatusException.class, () -> service.delete("1")
@@ -516,6 +531,6 @@ class FunkoServiceImplTest {
         assertEquals("El Funko con id 1 no se ha encontrado.", thrown.getReason());
 
         verify(validator, times(1)).isIdValid("1");
-        verify(repository, times(1)).findById(1L);
+        verify(repository, times(1)).findById("1");
     }
 }

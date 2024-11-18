@@ -9,8 +9,10 @@ import org.example.springboot_funkos.rest.categoria.services.CategoriaServiceImp
 import org.example.springboot_funkos.utils.pagination.PageResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -24,14 +26,11 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -110,7 +109,7 @@ class CategoriaControllerTest {
         Categoria res = objectMapper.readValue(response.getContentAsString(), Categoria.class);
 
         assertAll(
-                () -> assertEquals("12d45756-3895-49b2-90d3-c4a12d5ee081", res.getId()),
+                () -> assertEquals(UUID.fromString("12d45756-3895-49b2-90d3-c4a12d5ee081"), res.getId()),
                 () -> assertEquals("DISNEY", res.getNombre())
         );
 
@@ -135,7 +134,7 @@ class CategoriaControllerTest {
         Categoria res = objectMapper.readValue(response.getContentAsString(), Categoria.class);
 
         assertAll(
-                () -> assertEquals("12d45756-3895-49b2-90d3-c4a12d5ee081", res.getId()),
+                () -> assertEquals(UUID.fromString("12d45756-3895-49b2-90d3-c4a12d5ee081"), res.getId()),
                 () -> assertEquals("DISNEY", res.getNombre())
         );
 
@@ -176,32 +175,69 @@ class CategoriaControllerTest {
 
     @Test
     void delete() throws Exception {
-        doNothing().when(service).delete("12d45756-3895-49b2-90d3-c4a12d5ee081", new CategoriaDto());
+        // Crear un objeto CategoriaDto para la prueba
+        CategoriaDto categoriaDto = new CategoriaDto();
+        categoriaDto.setId(UUID.fromString("12d45756-3895-49b2-90d3-c4a12d5ee081"));
+        categoriaDto.setNombre("NombreValido");
+        categoriaDto.setActivado(true);
 
-        mvc.perform(MockMvcRequestBuilders.delete(myEndpoint + "/12d45756-3895-49b2-90d3-c4a12d5ee081"))
+        // Convertir el objeto a JSON
+        String categoriaDtoJson = new ObjectMapper().writeValueAsString(categoriaDto);
+        System.out.println("JSON Enviado: " + categoriaDtoJson); // Para depuración
+
+        // Realizar la solicitud DELETE
+        mvc.perform(MockMvcRequestBuilders.delete(myEndpoint + "/12d45756-3895-49b2-90d3-c4a12d5ee081")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(categoriaDtoJson))
                 .andExpect(status().isNoContent());
 
-        verify(service, times(1)).delete("12d45756-3895-49b2-90d3-c4a12d5ee081", new CategoriaDto());
+        // Capturar los argumentos enviados al método delete
+        ArgumentCaptor<String> idCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<CategoriaDto> dtoCaptor = ArgumentCaptor.forClass(CategoriaDto.class);
+
+        verify(service, times(1)).delete(idCaptor.capture(), dtoCaptor.capture());
+
+        // Validaciones de los argumentos capturados
+        assertEquals("12d45756-3895-49b2-90d3-c4a12d5ee081", idCaptor.getValue());
+        assertEquals(categoriaDto.getId(), dtoCaptor.getValue().getId());
+        assertEquals(categoriaDto.getNombre(), dtoCaptor.getValue().getNombre());
+        assertTrue(dtoCaptor.getValue().getActivado());
+
+        // Verificar que no haya interacciones adicionales con el servicio
+        verifyNoMoreInteractions(service);
     }
 
+    @Test
+    void deleteWithInvalidData() throws Exception {
+        // Crear un objeto CategoriaDto con datos inválidos (nombre vacío)
+        CategoriaDto categoriaDto = new CategoriaDto();
+        categoriaDto.setId(UUID.fromString("12d45756-3895-49b2-90d3-c4a12d5ee081"));
+        categoriaDto.setNombre(""); // Nombre vacío para causar validación fallida
+        categoriaDto.setActivado(true);
+
+        // Convertir el objeto a JSON
+        String categoriaDtoJson = new ObjectMapper().writeValueAsString(categoriaDto);
+
+        // Realizar la solicitud DELETE y verificar que se retorna un Bad Request
+        mvc.perform(MockMvcRequestBuilders.delete(myEndpoint + "/12d45756-3895-49b2-90d3-c4a12d5ee081")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(categoriaDtoJson))
+                .andExpect(status().isBadRequest())  // Esperamos un error de validación
+                .andExpect(jsonPath("$.nombre").value("El nombre no puede estar vacío")); // Verificamos el mensaje de error
+    }
 
     @Test
     void nombreIsBlank() throws Exception {
         CategoriaDto nuevoCategoria = new CategoriaDto();
-        nuevoCategoria.setNombre("");
+        nuevoCategoria.setNombre("");  // Nombre vacío para la validación
         nuevoCategoria.setActivado(true);
 
-        MockHttpServletResponse response = mvc.perform(
-                        post(myEndpoint)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(nuevoCategoria)))
-                .andReturn().getResponse();
-
-        assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatus());
-
-        String responseContent = response.getContentAsString();
-
-        assertTrue(responseContent.contains("El nombre no puede estar vacio"));
+        // Realizar la solicitud POST
+        mvc.perform(post(myEndpoint)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(nuevoCategoria)))
+                .andExpect(status().isBadRequest())  // Esperamos un Bad Request
+                .andExpect(jsonPath("$.nombre").value("El nombre no puede estar vacío"));  // Verificamos el mensaje de error específico
     }
 
     @Test
@@ -210,7 +246,7 @@ class CategoriaControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{ \"nombre\": \"\" }"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.nombre").value("El nombre no puede estar vacio"))
+                .andExpect(jsonPath("$.nombre").value("El nombre no puede estar vacío"))
                 .andReturn();
     }
 

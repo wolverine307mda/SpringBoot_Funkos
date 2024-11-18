@@ -134,7 +134,7 @@ public class VentaServiceImpl implements VentaService {
         log.info("Retornando stock del pedido: {}", venta);
         if (venta.getLineaVenta() != null) {
             venta.getLineaVenta().forEach(lineaVenta -> {
-                var funko = funkoRepository.findById(lineaVenta.getIdFunko()).get();
+                var funko = funkoRepository.findById(String.valueOf(lineaVenta.getIdFunko())).get();
                 funko.setStock(funko.getStock() + lineaVenta.getCantidad());
                 funkoRepository.save(funko);
             });

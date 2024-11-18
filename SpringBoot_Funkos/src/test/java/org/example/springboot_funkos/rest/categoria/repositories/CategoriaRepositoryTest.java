@@ -4,22 +4,20 @@ import org.example.springboot_funkos.rest.categoria.model.Categoria;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@DataJpaTest
+@DataMongoTest
+@Import(CategoriaRepository.class)  // Importa solo los beans relacionados con MongoDB
 class CategoriaRepositoryTest {
-
     @Autowired
     private CategoriaRepository repository;
-
-    @Autowired
-    private TestEntityManager entityManager;
 
     private Categoria categoriaTest;
 
@@ -29,9 +27,9 @@ class CategoriaRepositoryTest {
         categoriaTest.setId(UUID.fromString("12d45756-3895-49b2-90d3-c4a12d5ee081"));
         categoriaTest.setNombre("DISNEY");
         categoriaTest.setActivado(true);
-        entityManager.merge(categoriaTest);
-        entityManager.flush();
+        repository.save(categoriaTest); // Guardamos directamente usando el repositorio
     }
+
 
     @Test
     void findById() {
@@ -124,10 +122,11 @@ class CategoriaRepositoryTest {
     void deleteCategoria() {
         UUID categoriaId = categoriaTest.getId();
         repository.delete(categoriaTest);
-        entityManager.flush();
 
+        // Verificamos si la categoría fue eliminada
         Optional<Categoria> result = repository.findById(categoriaId);
 
         assertTrue(result.isEmpty(), "La categoría debería haber sido eliminada");
     }
+
 }

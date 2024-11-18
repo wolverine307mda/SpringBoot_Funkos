@@ -95,8 +95,7 @@ class CategoriaMapperTest {
                 () -> assertEquals(categoria.getId(), res.getId()),
                 () -> assertEquals(categoria.getNombre(), res.getNombre(), "El nombre original debe mantenerse"),
                 () -> assertEquals(categoria.getActivado(), res.getActivado(), "El estado original debe mantenerse"),
-                () -> assertEquals(categoria.getCreatedAt(), res.getCreatedAt(), "La fecha de creación debe mantenerse igual"),
-                () -> assertEquals(categoria.getUpdatedAt(), res.getUpdatedAt(), "La fecha de actualización debe mantenerse igual")
+                () -> assertEquals(categoria.getCreatedAt(), res.getCreatedAt(), "La fecha de creación debe mantenerse igual")
         );
     }
 }

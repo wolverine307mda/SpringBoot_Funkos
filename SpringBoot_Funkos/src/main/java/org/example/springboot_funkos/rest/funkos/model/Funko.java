@@ -16,16 +16,15 @@ import org.springframework.data.annotation.Id;
 
 import java.time.LocalDateTime;
 
-@Document(collection = "funkos")  // MongoDB collections are used instead of JPA tables
+@Document(collection = "funkos")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Funko {
-    private static final Long DEFAULT_ID = 0L;
 
-    @Id  // MongoDB uses @Id instead of @GeneratedValue for unique identifiers
-    private String id;  // MongoDB uses String as the default ID type
+    @Id
+    private String id;
 
     @NotBlank(message = "El nombre no puede estar vacio")
     private String nombre;
@@ -37,12 +36,27 @@ public class Funko {
     @Min(value = 0, message = "El stock no puede ser negativo")
     private Integer stock = 0;
 
-    @DBRef  // MongoDB uses DBRef to reference other documents like `Categoria`
+    @DBRef
     private Categoria categoria;
 
     @CreatedDate
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt = truncateToMillis(LocalDateTime.now());
 
     @LastModifiedDate
-    private LocalDateTime updatedAt = LocalDateTime.now();
+    private LocalDateTime updatedAt = truncateToMillis(LocalDateTime.now());
+
+    private LocalDateTime truncateToMillis(LocalDateTime dateTime) {
+        if (dateTime == null) {
+            return null; // Retorna null si no hay valor
+        }
+        return dateTime.withNano((dateTime.getNano() / 1_000_000) * 1_000_000);
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = truncateToMillis(createdAt);
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = truncateToMillis(updatedAt);
+    }
 }

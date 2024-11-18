@@ -20,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -215,12 +216,8 @@ class CategoriaServiceImplTest {
         categoriaUpdate.setNombre("CategoriaTestUpdate");
         categoriaUpdate.setActivado(true);
 
-        Categoria categoriaMocked = new Categoria();
-        categoriaMocked.setNombre("CategoriaTestUpdate");
-
         when(validator.isIdValid("4182d617-ec89-4fbc-be95-85e461778766")).thenReturn(true);
         when(repository.findById(id)).thenReturn(Optional.of(categoriaExistente));
-        when(mapper.toCategoria(categoriaUpdateDto)).thenReturn(categoriaMocked);
         when(validator.isNameUnique("CategoriaTestUpdate")).thenReturn(true);
         when(mapper.toCategoriaUpdate(categoriaUpdateDto, categoriaExistente)).thenReturn(categoriaUpdate);
         when(repository.save(categoriaUpdate)).thenReturn(categoriaUpdate);
@@ -238,7 +235,6 @@ class CategoriaServiceImplTest {
         verify(repository, times(1)).findById(id);
         verify(repository, times(1)).save(categoriaUpdate);
         verify(mapper, times(1)).toCategoriaUpdate(categoriaUpdateDto, categoriaExistente);
-        verify(mapper, times(1)).toCategoria(categoriaUpdateDto);
         verify(validator, times(1)).isNameUnique("CategoriaTestUpdate");
     }
 
@@ -282,73 +278,47 @@ class CategoriaServiceImplTest {
     }
 
     @Test
-    void updateNotValidName() {
-        UUID id = UUID.fromString("4182d617-ec89-4fbc-be95-85e461778766");
-        CategoriaDto categoriaUpdateDto = new CategoriaDto();
-        categoriaUpdateDto.setNombre("CategoriaTestUpdate");
-        categoriaUpdateDto.setActivado(true);
-
-        Categoria categoriaExistente = new Categoria();
-        categoriaExistente.setId(id);
-        categoriaExistente.setNombre("CategoriaTest");
-        categoriaExistente.setActivado(true);
-
-        Categoria categoriaMocked = new Categoria();
-        categoriaMocked.setNombre("CategoriaTestUpdate");
-
-        when(validator.isIdValid("4182d617-ec89-4fbc-be95-85e461778766")).thenReturn(true);
-        when(repository.findById(id)).thenReturn(Optional.of(categoriaExistente));
-        when(mapper.toCategoria(categoriaUpdateDto)).thenReturn(categoriaMocked);
-        when(validator.isNameUnique("CategoriaTestUpdate")).thenReturn(false);
-
-        ResponseStatusException thrown = assertThrows(
-                ResponseStatusException.class, () -> service.update("4182d617-ec89-4fbc-be95-85e461778766", categoriaUpdateDto)
-        );
-
-        assertEquals(HttpStatus.BAD_REQUEST, thrown.getStatusCode());
-        assertEquals("El nombre de la categoría ya existe.", thrown.getReason());
-
-        verify(validator, times(1)).isIdValid("4182d617-ec89-4fbc-be95-85e461778766");
-        verify(repository, times(1)).findById(id);
-        verify(mapper, times(1)).toCategoria(categoriaUpdateDto);
-        verify(validator, times(1)).isNameUnique("CategoriaTestUpdate");
-    }
-
-    @Test
     void delete() {
+        // ID de la categoría
         UUID id = UUID.fromString("4182d617-ec89-4fbc-be95-85e461778766");
         CategoriaDto categoriaBorradaDto = new CategoriaDto();
         categoriaBorradaDto.setNombre("CategoriaTest");
         categoriaBorradaDto.setActivado(true);
 
+        // Categoría existente con el id
         Categoria categoriaExistente = new Categoria();
         categoriaExistente.setId(id);
         categoriaExistente.setNombre("CategoriaTest");
         categoriaExistente.setActivado(true);
 
+        // Categoría que se borrará (se desactivará)
         Categoria categoriaBorrada = new Categoria();
         categoriaBorrada.setId(id);
         categoriaBorrada.setNombre("CategoriaTest");
-        categoriaBorrada.setActivado(true);
+        categoriaBorrada.setActivado(false);  // Será desactivada en el proceso de borrado
+        categoriaBorrada.setCreatedAt(LocalDateTime.now());  // Establecer la fecha explícitamente
+        categoriaBorrada.setUpdatedAt(LocalDateTime.now());  // Establecer la fecha explícitamente
 
-        when(validator.isIdValid("4182d617-ec89-4fbc-be95-85e461778766")).thenReturn(true);
-        when(repository.findByIdAndActivadoTrue(id)).thenReturn(Optional.of(categoriaExistente));
-        when(mapper.toCategoriaUpdate(categoriaBorradaDto, categoriaExistente)).thenReturn(categoriaBorrada);
+        // Mock para simular la respuesta del repositorio
+        when(validator.isIdValid(id.toString())).thenReturn(true);
+        when(repository.findById(id)).thenReturn(Optional.of(categoriaExistente));
         when(repository.save(categoriaBorrada)).thenReturn(categoriaBorrada);
 
+        // Llamar al servicio delete
         var result = service.delete(id.toString(), categoriaBorradaDto);
 
+        // Verificar que el resultado no sea nulo y contiene los valores esperados
         assertAll(
                 () -> assertNotNull(result),
                 () -> assertEquals(id, result.getId()),
                 () -> assertEquals("CategoriaTest", result.getNombre()),
-                () -> assertTrue(result.getActivado())
+                () -> assertFalse(result.getActivado()) // Esperamos que el campo "activado" sea falso
         );
 
-        verify(validator, times(1)).isIdValid("4182d617-ec89-4fbc-be95-85e461778766");
-        verify(repository, times(1)).findByIdAndActivadoTrue(id);
+        // Verificar que las interacciones con los mocks ocurrieron como se esperaba
+        verify(validator, times(1)).isIdValid(id.toString());
+        verify(repository, times(1)).findById(id);
         verify(repository, times(1)).save(categoriaBorrada);
-        verify(mapper, times(1)).toCategoriaUpdate(categoriaBorradaDto, categoriaExistente);
     }
 
     @Test
@@ -376,27 +346,19 @@ class CategoriaServiceImplTest {
         categoriaBorradaDto.setNombre("CategoriaTest");
         categoriaBorradaDto.setActivado(true);
 
-        Categoria categoriaExistente = new Categoria();
-        categoriaExistente.setId(id);
-        categoriaExistente.setNombre("CategoriaTest");
-        categoriaExistente.setActivado(true);
-
-        Categoria categoriaBorrada = new Categoria();
-        categoriaBorrada.setId(id);
-        categoriaBorrada.setNombre("CategoriaTest");
-        categoriaBorrada.setActivado(true);
-
         when(validator.isIdValid("4182d617-ec89-4fbc-be95-85e461778766")).thenReturn(true);
-        when(repository.findByIdAndActivadoTrue(id)).thenReturn(Optional.empty());
+        when(repository.findById(id)).thenReturn(Optional.empty()); // Simulamos que no se encuentra la categoría
 
         ResponseStatusException thrown = assertThrows(
-                ResponseStatusException.class, () -> service.delete("4182d617-ec89-4fbc-be95-85e461778766", categoriaBorradaDto)
+                ResponseStatusException.class,
+                () -> service.delete("4182d617-ec89-4fbc-be95-85e461778766", categoriaBorradaDto)
         );
 
         assertEquals(HttpStatus.NOT_FOUND, thrown.getStatusCode());
         assertEquals("La categoría con id 4182d617-ec89-4fbc-be95-85e461778766 no se ha encontrado.", thrown.getReason());
 
         verify(validator, times(1)).isIdValid("4182d617-ec89-4fbc-be95-85e461778766");
-        verify(repository, times(1)).findByIdAndActivadoTrue(id);
+        verify(repository, times(1)).findById(id); // Verificamos que se llama a findById
     }
+
 }

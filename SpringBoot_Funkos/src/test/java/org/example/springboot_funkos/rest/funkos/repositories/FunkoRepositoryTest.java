@@ -1,39 +1,65 @@
 package org.example.springboot_funkos.rest.funkos.repositories;
 
 import org.example.springboot_funkos.rest.categoria.model.Categoria;
+import org.example.springboot_funkos.rest.categoria.repositories.CategoriaRepository;
 import org.example.springboot_funkos.rest.funkos.model.Funko;
-import org.example.springboot_funkos.rest.funkos.repositories.FunkoRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
+import org.springframework.data.mongodb.core.mapping.DBRef;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@DataJpaTest
+@DataMongoTest
 class FunkoRepositoryTest {
 
     @Autowired
     private FunkoRepository repository;
 
     @Autowired
-    private TestEntityManager entityManager;
+    private CategoriaRepository categoriaRepository;
 
-    private static Categoria categoriaTest = new Categoria(UUID.randomUUID(), "PELICULA", LocalDateTime.now(), LocalDateTime.now(), true);
-    private static Funko funkoTest = new Funko(1L, "Darth Vader", 10.99, 20, categoriaTest, LocalDateTime.now(), LocalDateTime.now());
+    @DBRef
+    private Categoria categoria;
+
+    // Truncar fechas al inicializar objetos
+    private static final Categoria categoriaTest = new Categoria(
+            UUID.fromString("12d45756-3895-49b2-90d3-c4a12d5ee081"),
+            "PELICULA",
+            truncateToMillis(LocalDateTime.now()),
+            truncateToMillis(LocalDateTime.now()),
+            true
+    );
+
+    private static Funko funkoTest = new Funko(
+            "1",
+            "Darth Vader",
+            10.99,
+            20,
+            categoriaTest,
+            truncateToMillis(LocalDateTime.now()),
+            truncateToMillis(LocalDateTime.now())
+    );
 
     @BeforeEach
     void setUp() {
-        categoriaTest = entityManager.merge(categoriaTest);
-        entityManager.flush();
-        funkoTest.setCategoria(categoriaTest);
-        funkoTest = repository.saveAndFlush(funkoTest);
-    }
+        repository.deleteAll(); // Limpia FunkoRepository
+        categoriaRepository.deleteAll(); // Limpia CategoriaRepository
 
+        // Persistir la categoría antes de asociarla
+        Categoria categoriaPersistida = categoriaRepository.save(categoriaTest);
+
+        // Configurar Funko con la categoría persistida
+        funkoTest.setCategoria(categoriaPersistida);
+        funkoTest.setCreatedAt(truncateToMillis(funkoTest.getCreatedAt()));
+        funkoTest.setUpdatedAt(truncateToMillis(funkoTest.getUpdatedAt()));
+
+        funkoTest = repository.save(funkoTest); // Persistir Funko
+    }
 
     @Test
     void findAll() {
@@ -50,7 +76,7 @@ class FunkoRepositoryTest {
 
     @Test
     void findById() {
-        Long id = funkoTest.getId();
+        String id = funkoTest.getId();
 
         var result = repository.findById(id);
 
@@ -65,21 +91,31 @@ class FunkoRepositoryTest {
 
     @Test
     void findByIdNotFound() {
-        var result = repository.findById(999L);
+        var result = repository.findById("999");
 
-        assertNull(result.orElse(null));
+        assertTrue(result.isEmpty());
     }
 
     @Test
     void save() {
-        var savedFunko = repository.save(funkoTest);
+        var newFunko = new Funko(
+                "2",
+                "Luke Skywalker",
+                12.99,
+                15,
+                categoriaTest,
+                truncateToMillis(LocalDateTime.now()),
+                truncateToMillis(LocalDateTime.now())
+        );
+
+        var savedFunko = repository.save(newFunko);
 
         assertAll(
                 () -> assertNotNull(savedFunko.getId()),
-                () -> assertEquals(funkoTest.getNombre(), savedFunko.getNombre()),
-                () -> assertEquals(funkoTest.getPrecio(), savedFunko.getPrecio()),
-                () -> assertEquals(funkoTest.getStock(), savedFunko.getStock()),
-                () -> assertEquals(funkoTest.getCategoria(), savedFunko.getCategoria())
+                () -> assertEquals(newFunko.getNombre(), savedFunko.getNombre()),
+                () -> assertEquals(newFunko.getPrecio(), savedFunko.getPrecio()),
+                () -> assertEquals(newFunko.getStock(), savedFunko.getStock()),
+                () -> assertEquals(newFunko.getCategoria(), savedFunko.getCategoria())
         );
     }
 
@@ -88,6 +124,7 @@ class FunkoRepositoryTest {
         var result = repository.findByNombre("Darth Vader");
 
         assertAll(
+                () -> assertTrue(result.isPresent()),
                 () -> assertEquals(funkoTest.getNombre(), result.get().getNombre()),
                 () -> assertEquals(funkoTest.getPrecio(), result.get().getPrecio()),
                 () -> assertEquals(funkoTest.getStock(), result.get().getStock()),
@@ -99,7 +136,7 @@ class FunkoRepositoryTest {
     void findByNombreNotFound() {
         var result = repository.findByNombre("FunkoTestNotFound");
 
-        assertNull(result.orElse(null));
+        assertTrue(result.isEmpty());
     }
 
     @Test
@@ -107,6 +144,7 @@ class FunkoRepositoryTest {
         var result = repository.findByStock(20);
 
         assertAll(
+                () -> assertTrue(result.isPresent()),
                 () -> assertEquals(funkoTest.getNombre(), result.get().getNombre()),
                 () -> assertEquals(funkoTest.getPrecio(), result.get().getPrecio()),
                 () -> assertEquals(funkoTest.getStock(), result.get().getStock()),
@@ -118,6 +156,11 @@ class FunkoRepositoryTest {
     void findByStockNotFound() {
         var result = repository.findByStock(3000);
 
-        assertNull(result.orElse(null));
+        assertTrue(result.isEmpty());
+    }
+
+    // Método utilitario para truncar fechas a milisegundos
+    private static LocalDateTime truncateToMillis(LocalDateTime dateTime) {
+        return dateTime.withNano((dateTime.getNano() / 1_000_000) * 1_000_000);
     }
 }

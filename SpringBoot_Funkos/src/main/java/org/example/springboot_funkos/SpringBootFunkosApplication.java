@@ -6,11 +6,10 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
-import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 
 @SpringBootApplication
-@EnableCaching // Habilitamos el caché a nivel de aplicación
-@EnableJpaAuditing // Habilitamos la auditoría, idual para el tiempo de creación y modificación
+@EnableCaching
 @Slf4j
 public class SpringBootFunkosApplication implements CommandLineRunner {
     @Value("${spring.profiles.active}")
@@ -19,17 +18,11 @@ public class SpringBootFunkosApplication implements CommandLineRunner {
     private String port;
 
     public static void main(String[] args) {
-        // Iniciamos la aplicación de Spring Boot
         SpringApplication.run(SpringBootFunkosApplication.class, args);
     }
 
     @Override
     public void run(String... args) throws Exception {
-        // Aquí podemos ejecutar código al arrancar la aplicación
-        // Este mensaje simplemente es para que lo veas en la consola,
-        // no es necesario hacer este método si no lo vas a usar
-        System.out.println("🟢 Servidor escuchando en puerto: " + port + " y perfil: " + perfil + " 🚀");
+        log.info("🟢 Servidor escuchando en puerto: {} y perfil: {} 🚀", port, perfil);
     }
-
-
 }

@@ -110,7 +110,7 @@ class VentaServiceImplTest {
     void testSave() {
         // Arrange
         Funko producto = Funko.builder()
-                .id(1L)
+                .id("1")
                 .stock(5)
                 .precio(10.0)
                 .build();
@@ -126,8 +126,9 @@ class VentaServiceImplTest {
         Venta ventaToSave = new Venta();
         ventaToSave.setLineasPedido(List.of(lineaVenta));
 
-        when(pedidosRepository.save(any(Venta.class))).thenReturn(ventaToSave); // Utiliza any(Pedido.class) para cualquier instancia de Pedido
-        when(productosRepository.findById(anyLong())).thenReturn(Optional.of(producto));
+        // Ajustar stubbing para los valores específicos
+        when(pedidosRepository.save(any(Venta.class))).thenReturn(ventaToSave);
+        when(productosRepository.findById("1")).thenReturn(Optional.of(producto));
 
         // Act
         Venta resultVenta = pedidosService.save(venta);
@@ -141,7 +142,7 @@ class VentaServiceImplTest {
 
         // Verify
         verify(pedidosRepository).save(any(Venta.class));
-        verify(productosRepository, times(2)).findById(anyLong());
+        verify(productosRepository, times(2)).findById(any(String.class));  // Si has usado any(String.class)
     }
 
     @Test
@@ -154,7 +155,7 @@ class VentaServiceImplTest {
 
         // Verify
         verify(pedidosRepository, never()).save(any(Venta.class));
-        verify(productosRepository, never()).findById(anyLong());
+        verify(productosRepository, never()).findById(String.valueOf(anyLong()));
     }
 
     @Test
@@ -193,11 +194,10 @@ class VentaServiceImplTest {
     void testUpdate() {
         // Arrange
         Funko producto = Funko.builder()
-                .id(1L)
+                .id("1")
                 .stock(5)
                 .precio(10.0)
                 .build();
-
 
         LineaVenta lineaVenta = LineaVenta.builder()
                 .idFunko(1L)
@@ -211,9 +211,10 @@ class VentaServiceImplTest {
         Venta ventaToUpdate = new Venta();
         ventaToUpdate.setLineasPedido(List.of(lineaVenta)); // Inicializar la lista de líneas de pedido
 
+        // Stubbing para "1" y "0"
         when(pedidosRepository.findById(idPedido)).thenReturn(Optional.of(ventaToUpdate));
         when(pedidosRepository.save(any(Venta.class))).thenReturn(ventaToUpdate);
-        when(productosRepository.findById(anyLong())).thenReturn(Optional.of(producto));
+        when(productosRepository.findById(any(String.class))).thenReturn(Optional.of(producto)); // Usar any() para aceptar cualquier valor String
 
         // Act
         Venta resultVenta = pedidosService.update(idPedido, venta);
@@ -228,7 +229,7 @@ class VentaServiceImplTest {
         // Verify
         verify(pedidosRepository).findById(idPedido);
         verify(pedidosRepository).save(any(Venta.class));
-        verify(productosRepository, times(3)).findById(anyLong());
+        verify(productosRepository, times(3)).findById(any(String.class));  // Verificar que findById fue llamado tres veces
     }
 
     @Test
@@ -244,7 +245,7 @@ class VentaServiceImplTest {
         // Verify
         verify(pedidosRepository).findById(idPedido);
         verify(pedidosRepository, never()).save(any(Venta.class));
-        verify(productosRepository, never()).findById(anyLong());
+        verify(productosRepository, never()).findById(String.valueOf(anyLong()));
     }
 
     @Test

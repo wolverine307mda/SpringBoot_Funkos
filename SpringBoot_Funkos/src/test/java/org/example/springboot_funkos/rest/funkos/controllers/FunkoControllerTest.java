@@ -3,6 +3,7 @@ package org.example.springboot_funkos.rest.funkos.controllers;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import jakarta.persistence.EntityNotFoundException;
 import org.example.springboot_funkos.rest.categoria.model.Categoria;
 import org.example.springboot_funkos.rest.funkos.dto.FunkoDto;
 import org.example.springboot_funkos.rest.funkos.mappers.FunkoMapper;
@@ -72,7 +73,7 @@ class FunkoControllerTest {
         categoriaTest.setActivado(true);
         objectMapper.registerModule(new JavaTimeModule());
 
-        funkoTest.setId(1L);
+        funkoTest.setId("1");
         funkoTest.setNombre("Darth Vader");
         funkoTest.setPrecio(10.99);
         funkoTest.setStock(20);
@@ -82,8 +83,8 @@ class FunkoControllerTest {
 
     @Test
     void getAllFunkos() throws Exception {
-        Funko funko1 = new Funko(1L, "Mickey", 25.99, 10, null, null, null);
-        Funko funko2 = new Funko(1L, "Iron Man", 30.99, 5, null, null, null);
+        Funko funko1 = new Funko("1", "Mickey", 25.99, 10, null, LocalDateTime.now(), LocalDateTime.now());
+        Funko funko2 = new Funko("2", "Iron Man", 30.99, 5, null, LocalDateTime.now(), LocalDateTime.now());
 
         List<Funko> funkos = List.of(funko1, funko2);
         Pageable pageable = PageRequest.of(0, 10, Sort.by("id").ascending());
@@ -181,7 +182,7 @@ class FunkoControllerTest {
         funkoDto.setStock(15);
         funkoDto.setCategoria("Superheroe");
 
-        Funko savedFunko = new Funko(1L, "Mickey", 25.99, 10, null, null, null);
+        Funko savedFunko = new Funko("1", "Mickey", 25.99, 10, null, null, null);
 
         when(service.save(funkoDto)).thenReturn(savedFunko);
 
@@ -214,7 +215,7 @@ class FunkoControllerTest {
         funkoDto.setCategoria("Disney"); // Asignar la categoría al DTO
 
         // Crear el Funko actualizado con la categoría
-        Funko updatedFunko = new Funko(1L, "Mickey Updated", 28.99, 8, categoria, null, null);
+        Funko updatedFunko = new Funko("1", "Mickey Updated", 28.99, 8, categoria, null, null);
 
         // Simular el comportamiento del servicio
         when(service.update(funkoId.toString(), funkoDto)).thenReturn(updatedFunko);

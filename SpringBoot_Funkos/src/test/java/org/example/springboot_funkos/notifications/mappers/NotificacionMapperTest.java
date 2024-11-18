@@ -15,7 +15,7 @@ class NotificacionMapperTest {
 
     private final Categoria categoria = new Categoria(UUID.fromString("12d45756-3895-49b2-90d3-c4a12d5ee081"), "DISNEY", LocalDateTime.now(), LocalDateTime.now(), true);
     private final Funko funko = new Funko(
-            1L, // ID
+            "1", // ID
             "Darth Vader",
             15.99,
             100,
@@ -42,7 +42,7 @@ class NotificacionMapperTest {
     @Test
     void toNotificationDtoWithValidAndInvalidValues() {
         Funko funkoWithInvalidValues = new Funko(
-                2L,
+                "2",
                 "Iron Man",
                 -5.99, // Invalid price
                 0, // Stock
